@@ -6,12 +6,12 @@
 
 # @k9s0ke bashaap
 __k9s0ke_bashaap_chkver() {
+  local __k9s0ke_BASHAAP_VERSION=2.1.0  # MAJOR.minor.patch
   [[ ${BASH_VERSINFO[0]} -gt 4 ]] || [[ ${BASH_VERSINFO[0]} -eq 4 && ${BASH_VERSINFO[1]} -ge 4 ]] ||
     { echo 1>&2 "bash too old"; return 1; }
-  local __k9s0ke_BASHAAP_VERSION=2.0.0  # MAJOR.minor.patch
+  [[ $1 = '----v'* ]] || return 1
   local v=${1#----v}; [[ $v = [0-9]* ]] ||  # required by user, string
-    { echo 1>&2 "Bad args: $*"; return 1; }
-  test "$1" = "$v" && return 0
+    { echo 1>&2 "Bad bashaap args: $*"; return 1; }
   local vpat='^([^.]+)\.([^.+])'  # regex for MAJOR.minor
   [[ $__k9s0ke_BASHAAP_VERSION =~ $vpat ]] || return 1; local pv=( "${BASH_REMATCH[@]}" )  # provided version
   [[ $v =~ $vpat ]]                        || return 1; local rv=( "${BASH_REMATCH[@]}" )  # required version
@@ -22,7 +22,7 @@ __k9s0ke_bashaap_chkver() {
 __k9s0ke_bashaap_chkver "$@"
 
 # --- x8 --- start here to embed script ---
-
+# embedded bashaaparse; see https://gitlab.com/kstr0k/bashaaparse
 __k9s0ke_amember() {
   local h ndl=$1; shift
   for h; do test "$ndl" = "$h" && return 0; done
@@ -67,6 +67,23 @@ for s in "${!CLI_OPTS_bool[@]}"; do cat <<EOF
   --no-$s
 EOF
 done
+}
+
+__k9s0ke_argloop() {
+  test 'ARGV' = "$1" || local -n ARGV=$1; shift
+  local NSHIFT
+  while test ${#ARGV[@]} -gt 0; do local arg="${ARGV[0]}"; ARGV=( "${ARGV[@]:1}" ); case "$arg" in
+    --) break ;;
+    -h|--help) __k9s0ke_print_help; exit 0 ;;
+    -v) ARGV=( '--verbose' "${ARGV[@]}" ) ;;
+    -*)
+      if __k9s0ke_on_switch NSHIFT "$arg" "${ARGV[@]}"; then ARGV=( "${ARGV[@]:$(( NSHIFT - 1 ))}" )
+      else echo "Bad args: $arg"; exit 1
+      fi
+      ;;
+    *)  ARGV=( "$arg" "${ARGV[@]}" ); break ;;
+  esac; done
+  __k9s0ke_aappend CLI_OPTS_bool CLI_OPTS #; declare 1>&2 -p CLI_OPTS CLI_OPTS_bool
 }
 
 __k9s0ke_read_cfg() {
