@@ -59,11 +59,9 @@ EOHELP
       ;;
     --defaults) declare -p | sed -Ene 's!^declare -[^ ]* _O_(.*)!'"${2:-  }"'\1!p' ;;
     --process1)
-      local arg=${2#--} k; k=${arg%%=*}
-      if test "$k" = "$arg"; then
-        ### boolean --do-so or --no-do-so # remove if unneeded
+      local arg=${2#--} k; k=${arg%%=*}; arg=${arg#*=}
+      if test "$k" = "$arg"; then  # boolean --do-so or --no-do-so support
         if [[ $k = no-* ]]; then k=${k#no-}; arg=false; else arg=true; fi
-      else arg=${arg#*=}
       fi
       k=${k//-/_}; printf -v "_O_${k^^}" '%s' "$arg" ;;
     --mes)  # 0=$F 1=$SYMF 2=D 3=SYMD 4=$B 5=$SYMB # SYM = symlinks preserved
