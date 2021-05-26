@@ -30,14 +30,13 @@ __k9s0ke_amember() {
 }
 
 __k9s0ke_aappend() {
-  test "$1" = "_f" || local -n _f=$1
-  test "$2" = "_t" || local -n _t=$2
-  local k
-  for k in "${!_f[@]}"; do _t["$k"]=${_f["$k"]}; done
+  test _f = "$1" || local -n _f=$1; shift
+  test _t = "$1" || local -n _t=$1; shift
+  local k; for k in "${!_f[@]}"; do _t[$k]=${_f[$k]}; done
 }
 
 __k9s0ke_on_switch() {
-  test "$1" = "_n" || local -n _n=$1; shift; _n=0
+  test _n = "$1" || local -n _n=$1; shift; _n=0
   case "$1" in -h|--help) __k9s0ke_print_help; exit 0 ;; esac
   local s=${1#--}
   if __k9s0ke_amember "$s" "${!CLI_OPTS_bool[@]}"; then  # TODO: --arg=val
@@ -74,11 +73,10 @@ __k9s0ke_argloop() {
   local NSHIFT
   while test ${#ARGV[@]} -gt 0; do local arg="${ARGV[0]}"; ARGV=( "${ARGV[@]:1}" ); case "$arg" in
     --) break ;;
-    -h|--help) __k9s0ke_print_help; exit 0 ;;
     -v) ARGV=( '--verbose' "${ARGV[@]}" ) ;;
     -*)
       if __k9s0ke_on_switch NSHIFT "$arg" "${ARGV[@]}"; then ARGV=( "${ARGV[@]:$(( NSHIFT - 1 ))}" )
-      else echo "Bad args: $arg"; exit 1
+      else echo 1>&2 "Bad args: $arg"; exit 1
       fi
       ;;
     *)  ARGV=( "$arg" "${ARGV[@]}" ); break ;;
@@ -88,7 +86,7 @@ __k9s0ke_argloop() {
 
 __k9s0ke_read_cfg() {
   test -r "$1" || return 1
-  local kv; local _n
+  local kv _n
   while IFS= read -r kv; do
     __k9s0ke_on_switch _n "${kv%%=*}" "${kv#*=}"
   done <"$1"
