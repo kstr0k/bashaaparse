@@ -50,7 +50,7 @@ $(usage --defaults)
 EOHELP
 
   case "$1" in  # serve as all-purpose helper function
-    --die) local rc=$2; shift 2; [[ $* = '' ]] || echo 1>&2 "$*"; exit "$rc" ;;  # stderr
+    --die) local rc=$2 IFS=$' \t\n'; shift 2; [[ $* = '' ]] || echo 1>&2 "$*"; exit "$rc" ;;  # stderr
     --dieusage) usage 1>&2; shift; test $# -lt 2 || set -- "$1" $'\n'"$2" "${@:3}"; usage --die "$@" ;;
     --flags)  # optional indent str: '', '*   ' etc. (default: 2 spaces) # goes as-is into sed 's!!...!' replacement
       local pastr; pastr=$(declare -f parse_args)
@@ -88,7 +88,7 @@ errexit_call() {  # args: { RCVAR | '' } CMD ARG... # disable -e, re-enable in s
 
 main() {
   ##usage --defaults  # inspect parse_args results
-  test $# -eq 0 || usage --dieusage 1 "Bad args: $*"
+  test $# -eq 0 || usage --dieusage 1 'Bad args:' "$@"
 }
 
 parse_args "$@"
