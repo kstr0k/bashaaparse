@@ -4,22 +4,24 @@
 __usage() {  # args: header footer
   local - flags; set -f +o braceexpand
   flags=$(declare -p | sed -Ene 's/^declare -\S*\s+_O_([^=]+)=.*/\1/p')
-  printf '%s'  "${1:+${1%$'\n'}$'\n'}"  # add \n only if missing
-  test -z "$flags" || printf -- '--%s=ARG\n'  ${flags//_/-}
-  printf '%s'  "${2:+${2%$'\n'}$'\n'}"
+  printf '%s'${1:+'\n'}  "$1"  # add \n only if missing
+  test -z "$flags" || printf -- '--%s=ARG\n'  $(printf '%s'  "$flags" | sed -e 's/_/-/')
+  printf '%s'${2:+'\n'}  "$2"
 }
 __parse_args() {
+  local k
   test $# -gt 0 || set -- --
   if ! __process_arg "$@"; then
     case "$1" in
       -v) set -x ;;
       -h|--help|--usage|-'?') __usage 'Options:'; exit 0 ;;
       --*=*)
-        local k=${1%%=*}; k=${k#--}; printf -v "_O_${k//-/_}" '%s'  "${1#--*=}"
+        k=${1%%=*}; k=_O_${k#--}; printf -v "${k//-/_}" '%s'  "${1#--*=}"
+        # sh: k=${1%%=*}; k=_O_$(echo "${k#--}" | sed -e 's/-/_/'); eval "$k"'=$(printf "%sX"  "${1#--*=}");' "$k=\${$k%X}"
         ;;
       --noop) return 0 ;;
-      --no-?*) __parse_args "--${1#--no-}=false" "${@:2}"; return ;;
-      --?*)    __parse_args "$1=true"            "${@:2}"; return ;;
+      --no-?*) k=$1; shift; __parse_args "--${k#--no-}=false" "$@"; return ;;
+      --?*)    k=$1; shift; __parse_args "$k=true"            "$@"; return ;;
       --) shift ;& *) __main "$@"; return $? ;;
     esac
   fi
