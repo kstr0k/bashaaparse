@@ -19,7 +19,7 @@ __parse_args() {
         k=${1%%=*}; k=_O_${k#--}; printf -v "${k//-/_}" '%s'  "${1#--*=}"
         # sh: k=${1%%=*}; k=_O_$(echo "${k#--}" | sed -e 's/-/_/'); eval "$k"'=$(printf "%sX"  "${1#--*=}");' "$k=\${$k%X}"
         ;;
-      --noop) return 0 ;;
+      --exit) return 0 ;;
       --no-?*) k=$1; shift; __parse_args "--${k#--no-}=false" "$@"; return ;;
       --?*)    k=$1; shift; __parse_args "$k=true"            "$@"; return ;;
       --) shift ;& *) __main "$@"; return $? ;;
