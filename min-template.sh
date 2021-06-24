@@ -5,9 +5,9 @@ __usage() {  # args: header footer
   local flags
   flags=$(declare -p | sed -Ene 's/^declare -\S*\s+_O_([^=]+)=.*/\1/p')  ##bash:
   ##flags=$(set | sed -ne 's/^_O_\([^=]\+\)=.*/\1/p')  ##sh:
-  printf '%s'${1:+'\n'}  "$1"  # add \n only if missing
+  printf '%s'${1:+'\n'}  "${1:-}"  # add \n only if missing
   test -z "$flags" || printf -- '--%s=ARG\n'  $(printf '%s'  "$flags" | sed -e 's/_/-/g')
-  printf '%s'${2:+'\n'}  "$2"
+  printf '%s'${2:+'\n'}  "${2:-}"
 }
 __parse_args() {
   local k
