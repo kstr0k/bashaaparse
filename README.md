@@ -1,21 +1,25 @@
 # bashaaparse
 
-## _Automate arg-parsing / usage generation in Bash_
+## _Automate arg-parsing / usage generation in sh / bash / zsh_
 
 There are currently three argument parsers, all of which generate `--help` usage messages compatible with bash completion (`complete -F _longopt mytool`):
-- [`min-template.sh`](min-template.sh): minimalistic Bash parser that still supports --long-opt=value with auto-generated usage. Least code; might be the best template for any new script not limited by existing contract. Limitations: other types of options can be implemented, but won't show up in auto-generated help
+- [`min-template.sh`](min-template.sh): minimalistic sh / bash / zsh parser that still supports --long-opt=value with auto-generated usage. Least code; best for any new script not limited by existing contract. Limitations: other types of options can be implemented, but won't show up in auto-generated help
 - [`simple-template.sh`](simple-template.sh): use as scaffolding for your Bash scripts; includes auto-help for more complex options, and various utilities that most scripts require
 - [`bashaap`](bashaap/k9s0ke_bashaap-2.0.sh): not currently documented or maintained.
 
 ## min-template
 
-All option arguments must be of the form `--long-opt=value`, and must come before any positional arguments (`--` stops option processing). You **don't need any code to parse these**: all options are stored in globals of the form `_O_long_opt` (you will notice that `_O_` is easy to type, search and quite intuitive). Additionally, `--no-some-opt` is interpreted as `--some-opt=false` and `--some-opt` (if not covered by previous cases) as `--some-opt=true` (see note on [Bash booleans](#bash-booleans)). If you predeclare defaults for the `_O_globals` (even empty strings, e.g. `_O_dir=`), then `--help` will automatically list the corresponding flags.
+You don't need to copy/paste `min-template` &mdash; if you source it, override `__main()` (the default prints positional and option arguments), and call `__parse_args "$@"`, it works **out of the box in bash / zsh**. To generate a (possibly stripped) POSIX **`sh` version**, to be sourced or pasted into code, call
+```
+bash -uec '. ./min-template.sh; __parse_args ----gen=sh-strip >mt.sh'
+# or zsh -uec...; also ... ----gen=bash[-strip]; "bash" versions ok in zsh too
+```
 
-Parsing is initiated by calling `__parse_args "$@"`, which calls itself recursively; when it exhausts option arguments, it calls `__main` with the remaining (if any) positional arguments. You shouldn't place any code after the call to `__parse_args`, because it's not expected to return anything usable. If your script is a wrapper for some other program, you might as well `exec` it at the end of `__main()`, to avoid a useless dangling Bash process waiting for nothing.
+All option arguments must be of the form `--long-opt=value`, and must come before any positional arguments (`--` stops option processing). You **don't need any code to parse these**: all options are stored in globals of the form `_O_long_opt` (`_O_` is easy to type / search, and quite intuitive). Additionally, `--no-some-opt` is interpreted as `--some-opt=false` and `--some-opt` (if not covered by previous cases) as `--some-opt=true` (see note on [Bash booleans](#bash-booleans)). If you predeclare defaults for the `_O_globals` (even empty strings, e.g. `_O_dir=`), then `--help` will automatically list the corresponding flags.
+
+To initiate parsing , call `__parse_args "$@"`, which in turn calls itself recursively; when it exhausts option arguments, it calls `__main` with the remaining (if any) positional arguments. You shouldn't place any code after the calling `__parse_args` &mdash; it probably won't return anything usable. If your script is a wrapper for some other program, you might as well `exec` it at the end of `__main()`, to avoid a dangling shell process waiting for nothing.
 
 Extra processing, such as separated / short versions of the longopts (e.g. `-f` as an alias for `--force`, `-b branch` etc), sanity / security checks, or setting the `--help` header and footer, can be defined by overriding (or modifying) `__process_arg()`.
-
-You don't even need to copy/paste `min-template` &mdash; if you source it, then override `__main()`, and call `__parse_args "$@"`, it works out of the box.
 
 ## simple-template
 
