@@ -1,12 +1,12 @@
-#!/usr/bin/env bash
+#!/bin/sh
 ### vim bash -> sh: g/##bash:$/d | %s/^\(\s\+\)##\(.\{-}\)\s\+##sh:$/\1\2/
 ### (. ~/src/bashaaparse/min-template.sh; __parse_args -v --test-opt=x 1 2)  # test
 ### bash -uec '. ./min-template.sh; __parse_args ----gen=sh-strip >mt.sh'  # generate sh version
 
 __usage() {  # args: header footer
   local flags p1; p1='_O_\([^=]*\)=.*/--\2/; t p; d; :p; s/_/-/g; p'
-  flags=$(declare -p | sed -ne 's/^'"${ZSH_VERSION+typeset}${BASH_VERSION+declare}"' \(-[^[:space:]]\)*[[:space:]]*'"$p1")  ##bash:
-  ##flags=$(set | sed -ne 's/^\(\)'"$p1")  ##sh:
+  #flags=$(declare -p | sed -ne 's/^'"${ZSH_VERSION+typeset}${BASH_VERSION+declare}"' \(-[^[:space:]]\)*[[:space:]]*'"$p1")  ##bash:
+  flags=$(set | sed -ne 's/^\(\)'"$p1")  ##sh:
   printf '%s'${1:+'\n'}  "${1:-}"  # add \n only if missing
   test -z "$flags" || printf '%s=ARG\n'  $flags
   printf '%s'${2:+'\n'}  "${2:-}"
@@ -19,11 +19,11 @@ __parse_args() {
       -v) set -x ;;
       -h|--help|--usage|-'?') __usage 'Options:'; exit 0 ;;
       --*=*) k=${1%%=*}; k=_O_${k#--}
-        printf -v "${k//-/_}" '%s'  "${1#--*=}"  ##bash:
-        ##k=$k-; while :; do case "$k" in  ##sh:
-        ##  *-) k=${k%%-*}_${k#*-} ;;  ##sh:
-        ##   *) eval "${k%_}=\${1#--*=}"; break ;;  ##sh:
-        ##esac; done  ##sh:
+        #printf -v "${k//-/_}" '%s'  "${1#--*=}"  ##bash:
+        k=$k-; while :; do case "$k" in  ##sh:
+          *-) k=${k%%-*}_${k#*-} ;;  ##sh:
+           *) eval "${k%_}=\${1#--*=}"; break ;;  ##sh:
+        esac; done  ##sh:
         ;;
       --exit) return 0 ;;
       --no-?*) k=$1; shift; __parse_args "--${k#--no-}=false" "$@"; return ;;
@@ -39,7 +39,7 @@ __parse_args() {
 __parse_args_debug_main() {
   if [ "${_O___gen:-}" ]; then
       local sh osh src strip; strip=false; src=${_O_src:-}
-      : "${src:=${ZSH_VERSION+${(%):-%x}}${BASH_VERSION+${BASH_SOURCE}}}"  ##bash:
+      : "${src:=${ZSH_VERSION+${(%):-%x}}${BASH_VERSION+${BASH_SOURCE}}}"  # could be bash only, but keep it even in sh source ($0 is broken)
       : "${src:=$0}"  ##sh:
       case "$src" in */bash|*/zsh|*/sh) unset Bad && : "${Bad?source "$src" (use --src=)}" ;; esac
       sh=${_O___gen#----gen=}; [ "${sh%%*-strip}" ] || { sh=${sh%-strip}; strip=true; }
