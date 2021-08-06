@@ -2,6 +2,7 @@
 ### vim bash -> sh: g/##bash:$/d | %s/^\(\s\+\)##\(.\{-}\)\s\+##sh:$/\1\2/
 ### (. ~/src/bashaaparse/min-template.sh; __parse_args -v --test-opt=x 1 2)  # test
 ### bash -uec '. ./min-template.sh; __parse_args ----gen=sh-strip >mt.sh'  # generate sh version
+#shellcheck disable=SC3028,SC3043
 
 __usage() {  # args: header footer
   local flags p1='_O_\([^=]*\)=.*/--\2=ARG/; t p; d; :p; s/_/-/g; p'
