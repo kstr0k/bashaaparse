@@ -4,11 +4,11 @@
 ### bash -uec '. ./min-template.sh; __parse_args ----gen=sh-strip >mt.sh'  # generate sh version
 
 __usage() {  # args: header footer
-  local flags p1; p1='_O_\([^=]*\)=.*/--\2/; t p; d; :p; s/_/-/g; p'
+  local flags p1='_O_\([^=]*\)=.*/--\2=ARG/; t p; d; :p; s/_/-/g; p'
   #flags=$(declare -p | sed -ne 's/^'"${ZSH_VERSION+typeset}${BASH_VERSION+declare}"' \(-[^[:space:]]\)*[[:space:]]*'"$p1")  ##bash:
   flags=$(set | sed -ne 's/^\(\)'"$p1")  ##sh:
   printf '%s'${1:+'\n'}  "${1:-}"  # add \n only if missing
-  test -z "$flags" || printf '%s=ARG\n'  $flags
+  test -z "$flags" || printf '%s\n' "$flags"
   printf '%s'${2:+'\n'}  "${2:-}"
 }
 __parse_args() {
@@ -39,9 +39,9 @@ __parse_args() {
 __parse_args_debug_main() {
   if [ "${_O___gen:-}" ]; then
       local sh osh src strip; strip=false; src=${_O_src:-}
-      : "${src:=${ZSH_VERSION+${(%):-%x}}${BASH_VERSION+${BASH_SOURCE}}}"  # could be bash only, but keep it even in sh source ($0 is broken)
-      : "${src:=$0}"  ##sh:
-      case "$src" in */bash|*/zsh|*/sh) unset Bad && : "${Bad?source "$src" (use --src=)}" ;; esac
+      : "${src:=${BASH_VERSION+${BASH_SOURCE:-}}}"  # could be bash only; keep it in sh, in case sourced from bash
+      [ -z "${ZSH_VERSION:-}" ] || eval ': "${src:=${(%):-%x}}"'  # ditto; yash breaks without eval even with unexec'ed subshell
+      case "${src##*/}" in bash|zsh|sh) unset Bad && : "${Bad?source "$src" (use --src=)}" ;; esac
       sh=${_O___gen#----gen=}; [ "${sh%%*-strip}" ] || { sh=${sh%-strip}; strip=true; }
       osh=ba$sh; osh=${osh#baba}
       local s1="/##$osh:"'$/{s/\(^[[:space:]]*\)/\1#/p;d}' s2='\1'
