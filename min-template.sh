@@ -1,13 +1,11 @@
-#!/bin/bash
-#test $(( BASH_VERSINFO[0] > 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] >= 4) )) -eq 1 || exit 1
-### sed -e '/##bash:/d' -e '/##sh:/{s/^\([[:space:]]*\)#*/\1/;s/[[:space:]]*##*sh:$//}' <min-template.sh  # bash -> sh
+#!/usr/bin/env bash
 ### vim bash -> sh: g/##bash:$/d | %s/^\(\s\+\)##\(.\{-}\)\s\+##sh:$/\1\2/
 ### (. ~/src/bashaaparse/min-template.sh; __parse_args -v --test-opt=x 1 2)  # test
 
 __usage() {  # args: header footer
-  local flags
-  flags=$(declare -p | sed -ne 's/^declare -[^[:space:]]*[[:space:]]*_O_\([^=]*\)=.*/--\1/; t p; d; :p; s/_/-/g; p;')  ##bash:
-  ##flags=$(set | sed -ne 's/^_O_\([^=]*\)=.*/--\1/; t p; d; :p; s/_/-/g; p')  ##sh:
+  local flags p1; p1='_O_\([^=]*\)=.*/--\2/; t p; d; :p; s/_/-/g; p'
+  flags=$(declare -p | sed -ne 's/^'"${ZSH_VERSION+typeset}${BASH_VERSION+declare}"' \(-[^[:space:]]\)*[[:space:]]*'"$p1")  ##bash:
+  ##flags=$(set | sed -ne 's/^\(\)'"$p1")  ##sh:
   printf '%s'${1:+'\n'}  "${1:-}"  # add \n only if missing
   test -z "$flags" || printf '%s=ARG\n'  $flags
   printf '%s'${2:+'\n'}  "${2:-}"
@@ -37,10 +35,17 @@ __parse_args() {
 }
 
 ### override these
-__main() {
+__parse_args_debug_main() {
   __usage 'Options:' "Args: $(test $# -eq 0 || printf '{%s} ' "$@")" 1>&2
 }
 __process_arg() {  # if $1 handled, return 0; exit to stop processing
-  return 1;
+  case "$1" in
+    ----gen=*) local sh osh src; src=$0; sh=${1#----gen=}; osh=ba$sh; osh=${osh#baba}
+      src=${ZSH_VERSION+${(%):-%x}}${BASH_VERSION+${BASH_SOURCE}}  ##bash:
+      sed <"$src" -n \
+        -e "/##$osh:/d" -e "s/[[:space:]]*##$sh:$//; "'t s; p; d; :s; s/^\([[:space:]]*\)#*/\1/; p'
+      return 0 ;;
+  esac; return 1
 }
+__main() { __parse_args_debug_main "$@"; }
 ### end override
