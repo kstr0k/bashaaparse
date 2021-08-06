@@ -6,7 +6,7 @@
 
 __usage() {  # args: header footer
   local flags p1='_O_\([^=]*\)=.*/--\2=ARG/; t p; d; :p; s/_/-/g; p'
-  #flags=$(declare -p | sed -ne 's/^'"${ZSH_VERSION+typeset}${BASH_VERSION+declare}"' \(-[^[:space:]]\)*[[:space:]]*'"$p1")  ##bash:
+  #flags=$(declare -p | sed -ne 's/^'"${ZSH_VERSION+typeset}${BASH_VERSION+declare}"'[[:space:]]\{1,\}\(-[^[:space:]]*[[:space:]]\{1,\}\)*'"$p1")  ##bash:
   flags=$(set | sed -ne 's/^\(\)'"$p1")  ##sh:
   printf '%s'${1:+'\n'}  "${1:-}"  # add \n only if missing
   test -z "$flags" || printf '%s\n' "$flags"
@@ -20,12 +20,11 @@ __parse_args() {
       -v) set -x ;;
       -h|--help|--usage|-'?') __usage 'Options:'; exit 0 ;;
       --*=*) k=${1%%=*}; k=_O_${k#--}
-        #printf -v "${k//-/_}" '%s'  "${1#--*=}"  ##bash:
+        #printf -v "${k//-/_}" '%s'  "${1#--*=}" ;;  ##bash:
         k=$k-; while :; do case "$k" in  ##sh:
           *-) k=${k%%-*}_${k#*-} ;;  ##sh:
            *) eval "${k%_}=\${1#--*=}"; break ;;  ##sh:
-        esac; done  ##sh:
-        ;;
+        esac; done ;;  ##sh:
       --exit) return 0 ;;
       --no-?*) k=$1; shift; __parse_args "--${k#--no-}=false" "$@"; return ;;
       --?*)    k=$1; shift; __parse_args "$k=true"            "$@"; return ;;
