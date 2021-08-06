@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 ### vim bash -> sh: g/##bash:$/d | %s/^\(\s\+\)##\(.\{-}\)\s\+##sh:$/\1\2/
 ### (. ~/src/bashaaparse/min-template.sh; __parse_args -v --test-opt=x 1 2)  # test
+### bash -uec '. ./min-template.sh; __parse_args ----gen=sh-strip >mt.sh'  # generate sh version
 
 __usage() {  # args: header footer
   local flags p1; p1='_O_\([^=]*\)=.*/--\2/; t p; d; :p; s/_/-/g; p'
@@ -34,16 +35,19 @@ __parse_args() {
   shift; __parse_args "$@"
 }
 
-### override these
+### override / remove these as desired
 __parse_args_debug_main() {
-  __usage 'Options:' "Args: $(test $# -eq 0 || printf '{%s} ' "$@")" 1>&2
+  __usage 'Options:' "Args:$(test $# -eq 0 || printf ' {%s}' "$@")" 1>&2
 }
 __process_arg() {  # if $1 handled, return 0; exit to stop processing
   case "$1" in
-    ----gen=*) local sh osh src; src=$0; sh=${1#----gen=}; osh=ba$sh; osh=${osh#baba}
+    ----gen=*) local sh osh src strip; strip=false; src=$0
+      sh=${1#----gen=}; [ "${sh%%*-strip}" ] || { sh=${sh%-strip}; strip=true; }
+      osh=ba$sh; osh=${osh#baba}
       src=${ZSH_VERSION+${(%):-%x}}${BASH_VERSION+${BASH_SOURCE}}  ##bash:
-      sed <"$src" -n \
-        -e "/##$osh:/d" -e "s/[[:space:]]*##$sh:$//; "'t s; p; d; :s; s/^\([[:space:]]*\)#*/\1/; p'
+      local s1="/##$osh:"'$/{s/\(^[[:space:]]*\)/\1#/p;d}' s2='\1'
+      if $strip; then s1="/##$osh:"'$/d'; s2=''; fi
+      (set -x; sed <"$src" -n -e '1{s@^\(#!\).*'"@\1/bin/$sh@p;d}" -e "$s1" -e 's/\([[:space:]]*##'"$sh"':\)$/'"$s2"'/; t s; p; d; :s; s/^\([[:space:]]*\)#*/\1/; p')
       return 0 ;;
   esac; return 1
 }
