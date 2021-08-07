@@ -10,11 +10,24 @@ TTTnl=$k9s0ke_t3st_nl
 TTT_mint() {
   # default pp= replaces stdout with stderr log; can be overriden
   local __min_t_stderr; __min_t_stderr=$k9s0ke_t3st_tmp_dir/stderr.log
-  TTT pp='cat "$__min_t_stderr"' hook_test_pre='. "$__min_t_dash"; exec 2>"$__min_t_stderr"' "$@";
-  [ -z "${BASH_VERSION:-}${ZSH_VERSION:-}" ] ||
-    TTT pp='cat "$__min_t_stderr"' hook_test_pre='. "$__min_t_bash"; exec 2>"$__min_t_stderr"' "$@";
+  local __Tsed=$__real_sed
+  local __Th='sed() { "$__Tsed" "$@"; }; exec 2>"$__min_t_stderr"'
+  while :; do
+    TTT spec="dash-mint + $__Tsed" pp='cat "$__min_t_stderr"' hook_test_pre='. "$__min_t_dash"; '"$__Th" "$@";
+    [ -z "${BASH_VERSION:-}${ZSH_VERSION:-}" ] ||
+      TTT spec="bash-mint + $__Tsed" pp='cat "$__min_t_stderr"' hook_test_pre='. "$__min_t_bash"; '"$__Th" "$@";
+    if [ "$__Tsed" != __posix_sed ] && $__sed_has_posix; then __Tsed=__posix_sed; else break; fi
+  done
   rm -f "$__min_t_stderr"
 }
+
+__real_sed=$(command -v sed)
+__sed_has_posix=$( (sed --posix -e :x </dev/null >/dev/null 2>&1) && echo true || echo false )
+if $__sed_has_posix; then
+  __posix_sed() { "$__real_sed" --posix "$@"; }
+else
+  __posix_sed() { "$__real_sed" "$@"; }
+fi
 
 k9s0ke_t3st_enter
 
