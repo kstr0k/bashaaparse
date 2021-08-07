@@ -6,9 +6,8 @@
 
 __usage() {  # args: header footer
   local flags
-  #local p1; p1='s/_/-/g;s/^-O-\(.*\)/--\1=ARG/p'  ##bash:
-  #if [ "${BASH_VERSION:-}" ]; then flags=$(compgen -v | sed -n -e "$p1")  ##bash:
-  #elif [ "${ZSH_VERSION:-}" ]; then flags=$(emulate zsh -c 'zmodload zsh/parameter; print -rl -- ${(k)parameters}' | sed -n -e "$p1"); fi  ##bash:
+  #flags=$({ [ -z "${BASH_VERSION:-}" ] || compgen -v; [ -z "${ZSH_VERSION:-}" ] || emulate zsh -c 'zmodload zsh/parameter; print -rl -- ${(k)parameters}'; } |  ##bash:
+  #  sed -n -e 's/_/-/g;s/^-O-\(.*\)/--\1=ARG/p')  ##bash:
   flags=$(set | sed -n -e 's/^_O_\([^=]*\)=.*/--\1=ARG/' -e tp -e d -e :p -e 's/_/-/g;p')  ##sh:
   printf '%s'${1:+'\n'}  "${1:-}"  # add \n only if missing
   test -z "$flags" || printf '%s\n' "$flags"
