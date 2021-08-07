@@ -14,19 +14,30 @@ cd "${0%/*}"/
 
 # --- INFRASTRUCTURE
 
-# dynamically change which sed runs
-__real_sed=$( if [ "${POSH_VERSION:-}" ]; then which sed; else command -v sed; fi)
-  # avoid infinite recursion with busybox builtin sed
-__sed_has_posix=$( [ "$__real_sed" != sed ] && (sed --posix -e q </dev/null 2>/dev/null) && 
-  echo true || echo false )
-  # mask_sed replaces sed with the current $__Tsed
-if $__sed_has_posix; then
-  __posix_sed() { "$__real_sed" --posix "$@"; }
-  __mask_sed() { sed() { eval "$__Tsed \$@"; }; }  # avoid nested eval
-else
-  __posix_sed() { sed "$@"; }
-  __mask_sed() { :; }
-fi
+# figure out sed implementations
+__mask_sed() {
+  case "$1" in
+    ''|'sed'|'sed '*) return 0 ;;  # avoid infinite loop
+  esac
+  eval "sed() { $1 \"\$@\"; }"
+}
+__find_seds() {
+  __MIN_T_SEDS= __busybox_sed= __gsed_posix= __gsed=
+  local pathsed; pathsed=$(command -v sed || :)
+  # busybox sh with builtin sed: command -v -> sed, which -> /path/to
+  [ "${pathsed#/}" != "${pathsed}" ] || pathsed=$(which sed)
+  for __Tsed in "$pathsed" gsed sed 'busybox sed' psed; do
+    command -v "${__Tsed%% *}" >/dev/null 2>&1 || continue
+    case "$(__mask_sed "$__Tsed"; sed </dev/null --help 2>&1)" in
+      *'using GNU software:'*) : "${__gsed:=$__Tsed}"; : "${__gsed_posix:=$__Tsed --posix}" ;;
+      'BusyBox v'*) : "${__busybox_sed:=$__Tsed}" ;;
+      *) __MIN_T_SEDS="$__MIN_T_SEDS,$__Tsed" ;;
+      '') continue ;;
+    esac
+    __MIN_T_SEDS="$__MIN_T_SEDS,$__busybox_sed,$__gsed,$__gsed_posix"
+  done
+}
+if [ -z "${__MIN_T_SEDS:-}" ]; then __find_seds; fi
 
 # abbreviations
 TTT()   { k9s0ke_t3st_one "$@"; }
@@ -36,14 +47,14 @@ TTTnl=$k9s0ke_t3st_nl
 TTT_mint() {
   # default pp= replaces stdout with stderr log; can be overriden
   local __min_t_stderr; __min_t_stderr=$k9s0ke_t3st_tmp_dir/stderr.log
-  local __Tsed=$__real_sed
   # repeated code
-  local __Th='__mask_sed; exec 2>"$__min_t_stderr"'
+  local __Th='__mask_sed "$__Tsed"; exec 2>"$__min_t_stderr"'
   local __Tpp='cat "$__min_t_stderr"'
-  # try various sed's
-  for __Tsed in "$__real_sed" "$(! $__sed_has_posix || echo __posix_sed)" "${__MIN_T_SED:-}"; do
-    [ "$__Tsed" ] || continue
-    TTT spec="dash-mint + $__Tsed" pp="$__Tpp" hook_test_pre='. "$__min_t_dash"; '"$__Th" "$@";
+
+  local __Tseds __Tsed; __Tseds=$__MIN_T_SEDS',';  # try various sed's
+  while [ "$__Tseds" ] ; do
+    __Tsed=${__Tseds%%,*}; __Tseds=${__Tseds#*,}; [ "$__Tsed" ] || continue
+    TTT spec="dash-mint + '$__Tsed'" pp="$__Tpp" hook_test_pre='. "$__min_t_dash"; '"$__Th" "$@";
     [ "${BASH_VERSION:-}${ZSH_VERSION:-}" ] || continue
     TTT spec="bash-mint + $__Tsed" pp="$__Tpp" hook_test_pre='. "$__min_t_bash"; '"$__Th" "$@";
   done
@@ -57,7 +68,7 @@ k9s0ke_t3st_enter
 
 k9s0ke_t3st_mktemp __min_t_dash; export __min_t_dash
 k9s0ke_t3st_mktemp __min_t_bash; export __min_t_bash
-TTT_e nl=false hook_test_pre='__Tsed=__posix_sed; __mask_sed; exec >"$__min_t_bash"' spec='# TODO : try to generate bash version' \
+TTT_e nl=false hook_test_pre='__mask_sed "${__gsed_posix:-}"; exec >"$__min_t_bash"' spec='# TODO : try to generate bash version' \
  -- eval '. ../min-template.sh; __parse_args ----gen=bash --src=../min-template.sh'
 TTT_e nl=false hook_test_pre='exec >"$__min_t_dash"' spec='# TODO : try to generate sh version' \
  -- bash -euc '. "$__min_t_bash"; __parse_args ----gen=sh --src=../min-template.sh'
