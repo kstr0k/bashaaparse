@@ -5,9 +5,10 @@
 #shellcheck disable=SC3028,SC3043
 
 __usage() {  # args: header footer
-  local flags p1='_O_\([^=]*\)=.*/--\2=ARG/; t p; d; :p; s/_/-/g; p'
-  #flags=$(declare -p | sed -ne 's/^'"${ZSH_VERSION+typeset}${BASH_VERSION+declare}"'[[:space:]]\{1,\}\(-[^[:space:]]*[[:space:]]\{1,\}\)*'"$p1")  ##bash:
-  flags=$(set | sed -ne 's/^\(\)'"$p1")  ##sh:
+  local flags p1='_O_\([^=]*\)=.*/--\2=ARG/' p2=tp p3=d p4=:p p5='s/_/-/g;p'
+  #if [ "${BASH_VERSION:-}" ]; then flags=$(compgen -v | sed -n -e 's/_/-/g' -e 's/^-O-\(.*\)/--\1=ARG/p')  ##bash:
+  #elif [ "${ZSH_VERSION:-}" ]; then flags=$(declare -p | sed -n -e '/^typeset /bl1' -e '/^export /bl1' -e d -e :l1 -e 's/[^[:space:]]\{1,\}[[:space:]]\{1,\}\(-[^[:space:]]*[[:space:]]\{1,\}\)*'"$p1" -e "$p2" -e "$p3" -e "$p4" -e "$p5"); fi  ##bash:
+  flags=$(set | sed -n -e 's/^\(\)'"$p1" -e "$p2" -e "$p3" -e "$p4" -e "$p5")  ##sh:
   printf '%s'${1:+'\n'}  "${1:-}"  # add \n only if missing
   test -z "$flags" || printf '%s\n' "$flags"
   printf '%s'${2:+'\n'}  "${2:-}"
@@ -44,9 +45,9 @@ __parse_args_debug_main() {
       case "${src##*/}" in bash|zsh|sh) unset Bad && : "${Bad?source "$src" (use --src=)}" ;; esac
       sh=${_O___gen#----gen=}; [ "${sh%%*-strip}" ] || { sh=${sh%-strip}; strip=true; }
       osh=ba$sh; osh=${osh#baba}
-      local s1="/##$osh:"'$/{s/\(^[[:space:]]*\)/\1#/p;d}' s2='\1'
+      local s1="/##$osh:"'$/{s/\(^[[:space:]]*\)/\1#/p;d;}' s2='\1'
       if $strip; then s1="/##$osh:"'$/d'; s2=''; fi
-      (set -x; sed <"$src" -n -e '1{s@^\(#!\).*'"@\1/bin/$sh@p;d}" -e "$s1" -e 's/\([[:space:]]*##'"$sh"':\)$/'"$s2"'/; t s; p; d; :s; s/^\([[:space:]]*\)#*/\1/; p')
+      (set -x; sed <"$src" -n -e '1{s@^\(#!\).*'"@\1/bin/$sh@p;d;}" -e "$s1" -e 's/\([[:space:]]*##'"$sh"':\)$/'"$s2"'/' -e ts -e 'p;d' -e :s -e 's/^\([[:space:]]*\)#*/\1/' -e p)
   fi
   __usage 'Options:' "Args:$(test $# -eq 0 || printf ' {%s}' "$@")" 1>&2
 }
