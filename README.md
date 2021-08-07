@@ -3,23 +3,31 @@
 ## _Automate arg-parsing / usage generation in sh / bash / zsh_
 
 There are currently three argument parsers, all of which generate `--help` usage messages compatible with bash completion (`complete -F _longopt mytool`):
-- [`min-template.sh`](min-template.sh): minimalistic sh / bash / zsh parser that still supports --long-opt=value with auto-generated usage. Least code; best for any new script not limited by existing contract. Limitations: other types of options can be implemented, but won't show up in auto-generated help
-- [`simple-template.sh`](simple-template.sh): use as scaffolding for your Bash scripts; includes auto-help for more complex options, and various utilities that most scripts require
+- [`min-template.sh`](#min-template): minimalistic sh / bash / zsh parser that still supports --long-opt=value with auto-generated usage. Least code; best for any new script not limited by existing contract. Limitations: other types of options can be implemented, but won't show up in auto-generated help
+- [`simple-template.sh`](#simple-template): use as scaffolding for your Bash scripts; includes auto-help for more complex options, and various utilities that most scripts require
 - [`bashaap`](bashaap/k9s0ke_bashaap-2.0.sh): not currently documented or maintained.
 
 ## min-template
 
-You don't need to copy/paste `min-template` &mdash; if you source it, override `__main()` (the default prints positional and option arguments), and call `__parse_args "$@"`, it works **out of the box in bash / zsh**. To generate a (possibly stripped) POSIX **`sh` version**, to be sourced or pasted into code, call
+### Setup
+
+You don't need to copy/paste `min-template` &mdash; if you source it, override `__main()` (the default prints positional and option arguments), and call `__parse_args "$@"`, it works **out of the box in sh / bash / zsh**. To generate a (possibly optimized and stripped) **shell-specific version**, to be sourced or pasted into code, run
 ```
-bash -uec '. ./min-template.sh; __parse_args ----gen=sh-strip >mt.sh'
-# or zsh -uec...; also ... ----gen=bash[-strip]; "bash" versions ok in zsh too
+(f=./min-template.sh; . "$f"; __parse_args ----gen={bash|sh}[-strip] --src="$f" >mt.sh)
+# gen=bash result works in zsh too. If called from bash/zsh, no --src needed.
 ```
 
-All option arguments must be of the form `--long-opt=value`, and must come before any positional arguments (`--` stops option processing). You **don't need any code to parse these**: all options are stored in globals of the form `_O_long_opt` (`_O_` is easy to type / search, and quite intuitive). Additionally, `--no-some-opt` is interpreted as `--some-opt=false` and `--some-opt` (if not covered by previous cases) as `--some-opt=true` (see note on [Bash booleans](#bash-booleans)). If you predeclare defaults for the `_O_globals` (even empty strings, e.g. `_O_dir=`), then `--help` will automatically list the corresponding flags.
+### Usage
+
+All option arguments have the form `--long-opt=value` (with `--my_opt` silently translated to `--my-opt`), and must come before any positional arguments (`--` stops option processing). You **don't need any code to parse these**: all options are stored in globals of the form `_O_long_opt` (`_O_` is easy to type / search, and quite intuitive). Additionally, `--no-some-opt` is interpreted as `--some-opt=false` and `--some-opt` (if not covered by previous cases) as `--some-opt=true` (see note on [Bash booleans](#bash-booleans)). If you predeclare defaults for the `_O_globals` (even empty strings, e.g. `_O_dir=`), then `--help` will automatically list the corresponding flags.
 
 To initiate parsing , call `__parse_args "$@"`, which in turn calls itself recursively; when it exhausts option arguments, it calls `__main` with the remaining (if any) positional arguments. You shouldn't place any code after the calling `__parse_args` &mdash; it probably won't return anything usable. If your script is a wrapper for some other program, you might as well `exec` it at the end of `__main()`, to avoid a dangling shell process waiting for nothing.
 
 Extra processing, such as separated / short versions of the longopts (e.g. `-f` as an alias for `--force`, `-b branch` etc), sanity / security checks, or setting the `--help` header and footer, can be defined by overriding (or modifying) `__process_arg()`.
+
+### Testing
+
+`min-template` has been tested with several shells (`dash`, `bash`, FreeBSD `sh`, `busybox sh`, `zsh` + its emulations) and `sed` implementations (GNU / BSD sed, perl [`psed`](https://metacpan.org/pod/App::s2p)). Tests (see [`mintemplate.t`](https://gitlab.com/kstr0k/bashaaparse/-/blob/master/t/min-template.t#L6)) use the [`t3st`](https://gitlab.com/kstr0k/t3st) framework.
 
 ## simple-template
 
