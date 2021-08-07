@@ -5,9 +5,11 @@
 #shellcheck disable=SC3028,SC3043
 
 __usage() {  # args: header footer
-  local flags p1='_O_\([^=]*\)=.*/--\2=ARG/' p2=tp p3=d p4=:p p5='s/_/-/g;p'
-  #if [ "${BASH_VERSION:-}" ]; then flags=$(compgen -v | sed -n -e 's/_/-/g' -e 's/^-O-\(.*\)/--\1=ARG/p')  ##bash:
-  #elif [ "${ZSH_VERSION:-}" ]; then flags=$(declare -p | sed -n -e '/^typeset /bl1' -e '/^export /bl1' -e d -e :l1 -e 's/[^[:space:]]\{1,\}[[:space:]]\{1,\}\(-[^[:space:]]*[[:space:]]\{1,\}\)*'"$p1" -e "$p2" -e "$p3" -e "$p4" -e "$p5"); fi  ##bash:
+  local flags p1
+  p1='_O_\([^=]*\)=.*/--\2=ARG/' p2=tp p3=d p4=:p p5='s/_/-/g;p'  ##sh:
+  #p1='s/_/-/g;s/^-O-\(.*\)/--\1=ARG/p'  ##bash:
+  #if [ "${BASH_VERSION:-}" ]; then flags=$(compgen -v | sed -n -e "$p1")  ##bash:
+  #elif [ "${ZSH_VERSION:-}" ]; then flags=$(emulate zsh -c 'zmodload zsh/parameter; print -rl -- ${(k)parameters}' | sed -n -e "$p1"); fi  ##bash:
   flags=$(set | sed -n -e 's/^\(\)'"$p1" -e "$p2" -e "$p3" -e "$p4" -e "$p5")  ##sh:
   printf '%s'${1:+'\n'}  "${1:-}"  # add \n only if missing
   test -z "$flags" || printf '%s\n' "$flags"
@@ -47,7 +49,7 @@ __parse_args_debug_main() {
       osh=ba$sh; osh=${osh#baba}
       local s1="/##$osh:"'$/{s/\(^[[:space:]]*\)/\1#/p;d;}' s2='\1'
       if $strip; then s1="/##$osh:"'$/d'; s2=''; fi
-      (set -x; sed <"$src" -n -e '1{s@^\(#!\).*'"@\1/bin/$sh@p;d;}" -e "$s1" -e 's/\([[:space:]]*##'"$sh"':\)$/'"$s2"'/' -e ts -e 'p;d' -e :s -e 's/^\([[:space:]]*\)#*/\1/' -e p)
+      (set -x; sed <"$src" -n -e '1{s@^\(#!\).*'"@\1/bin/$sh@p;d;}" -e "$s1" -e 's/\([[:space:]]*##'"$sh"':\)$/'"$s2"'/' -e ts -e 'p;d' -e :s -e 's/^\([[:space:]]*\)#*/\1/;p')
   fi
   __usage 'Options:' "Args:$(test $# -eq 0 || printf ' {%s}' "$@")" 1>&2
 }
