@@ -5,12 +5,11 @@
 #shellcheck disable=SC3028,SC3043
 
 __usage() {  # args: header footer
-  local flags p1
-  p1='_O_\([^=]*\)=.*/--\2=ARG/' p2=tp p3=d p4=:p p5='s/_/-/g;p'  ##sh:
-  #p1='s/_/-/g;s/^-O-\(.*\)/--\1=ARG/p'  ##bash:
+  local flags
+  #local p1; p1='s/_/-/g;s/^-O-\(.*\)/--\1=ARG/p'  ##bash:
   #if [ "${BASH_VERSION:-}" ]; then flags=$(compgen -v | sed -n -e "$p1")  ##bash:
   #elif [ "${ZSH_VERSION:-}" ]; then flags=$(emulate zsh -c 'zmodload zsh/parameter; print -rl -- ${(k)parameters}' | sed -n -e "$p1"); fi  ##bash:
-  flags=$(set | sed -n -e 's/^\(\)'"$p1" -e "$p2" -e "$p3" -e "$p4" -e "$p5")  ##sh:
+  flags=$(set | sed -n -e 's/^_O_\([^=]*\)=.*/--\1=ARG/' -e tp -e d -e :p -e 's/_/-/g;p')  ##sh:
   printf '%s'${1:+'\n'}  "${1:-}"  # add \n only if missing
   test -z "$flags" || printf '%s\n' "$flags"
   printf '%s'${2:+'\n'}  "${2:-}"
