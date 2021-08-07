@@ -5,19 +5,17 @@
 #shellcheck disable=SC3028,SC3043
 
 __usage() {  # args: header footer
-  local flags
-  #flags=$({ [ -z "${BASH_VERSION:-}" ] || compgen -v; [ -z "${ZSH_VERSION:-}" ] || emulate zsh -c 'zmodload zsh/parameter; print -rl -- ${(k)parameters}'; } |  ##bash:
-  #  sed -n -e 's/_/-/g;s/^-O-\(.*\)/--\1=ARG/p')  ##bash:
-  flags=$(set | sed -n -e 's/^_O_\([^=]*\)=.*/--\1=ARG/' -e tp -e d -e :p -e 's/_/-/g;p')  ##sh:
+  local flags; flags=$(
+    #{ [ -z "${BASH_VERSION:-}" ] || compgen -v; [ -z "${ZSH_VERSION:-}" ] || emulate zsh -c 'zmodload zsh/parameter; print -rl -- ${(k)parameters}'; } |  ##bash:
+    #sed -n -e 's/_/-/g;s/^-O-\(.*\)/--\1=ARG/p')  ##bash:
+    set | sed -n -e '/^_O_/!d;s/_/-/g;s/^-O-\([[:alnum:]-]*\)=.*/--\1=ARG/p')  ##sh:
   printf '%s'${1:+'\n'}  "${1:-}"  # add \n only if missing
   test -z "$flags" || printf '%s\n' "$flags"
   printf '%s'${2:+'\n'}  "${2:-}"
 }
 __parse_args() {
-  local k
-  test $# -gt 0 || set -- --
-  if ! __process_arg "$@"; then
-    case "$1" in
+  local k; test $# -gt 0 || set -- --
+  if ! __process_arg "$@"; then case "$1" in
       -v) set -x ;;
       -h|--help|--usage|-'?') __usage 'Options:'; exit 0 ;;
       --*=*) k=${1%%=*}; k=_O_${k#--}
@@ -31,8 +29,7 @@ __parse_args() {
       --?*)    k=$1; shift; __parse_args "$k=true"            "$@"; return ;;
       --) shift; __main "$@"; return $? ;;
       *)         __main "$@"; return $? ;;
-    esac
-  fi
+  esac; fi
   shift; __parse_args "$@"
 }
 
@@ -51,8 +48,6 @@ __parse_args_debug_main() {
   fi
   __usage 'Options:' "Args:$(test $# -eq 0 || printf ' {%s}' "$@")" 1>&2
 }
-__process_arg() {  # if $1 handled, return 0; exit to stop processing
-  return 1
-}
+__process_arg() { return 1; }  # if $1 handled, return 0; exit to stop processing
 __main() { __parse_args_debug_main "$@"; }
 ### end override
