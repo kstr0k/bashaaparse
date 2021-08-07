@@ -12,11 +12,11 @@ TTT_mint() {
   local __min_t_stderr; __min_t_stderr=$k9s0ke_t3st_tmp_dir/stderr.log
   local __Tsed=$__real_sed
   local __Th='__mask_sed; exec 2>"$__min_t_stderr"'
-  while :; do
+  for __Tsed in "$__real_sed" "$(! $__sed_has_posix || echo __posix_sed)" "${__MIN_T_SED:-}"; do
+    [ "$__Tsed" ] || continue
     TTT spec="dash-mint + $__Tsed" pp='cat "$__min_t_stderr"' hook_test_pre='. "$__min_t_dash"; '"$__Th" "$@";
     [ -z "${BASH_VERSION:-}${ZSH_VERSION:-}" ] ||
       TTT spec="bash-mint + $__Tsed" pp='cat "$__min_t_stderr"' hook_test_pre='. "$__min_t_bash"; '"$__Th" "$@";
-    if [ "$__Tsed" != __posix_sed ] && $__sed_has_posix; then __Tsed=__posix_sed; else break; fi
   done
   rm -f "$__min_t_stderr"
 }
