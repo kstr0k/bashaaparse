@@ -42,6 +42,8 @@ TTT_mint out="Options:$TTTnl--opt-1-x=ARG${TTTnl}Args: {1 2} {3}" \
   -- __parse_args --opt-1-x=xx '1 2' '3'
 TTT_mint pp= out="xy" \
   -- eval '__parse_args --opt-1-x=xx --opt2=y; echo "${_O_opt_1_x%x}$_O_opt2"'
+TTT_mint pp= out="--opt-1-x=ARG$TTTnl--opt2=ARG" \
+  -- eval '__parse_args --opt-1-x=xx --opt2=y; grep ^--opt-1 "$__min_t_stderr"; grep ^--opt2 "$__min_t_stderr"'
 
 k9s0ke_t3st_leave
 
