@@ -1,28 +1,25 @@
 #!/bin/sh
+set -u
 cd "${0%/*}"/
 . ./k9s0ke_t3st_lib.sh
-set -u
 
-TTT()   { k9s0ke_t3st_one "$@"; }
-TTT_e() { k9s0ke_t3st_one errexit=true "$@"; }
-TTTnl=$k9s0ke_t3st_nl
+## --- HOWTO / SETUP
 
-TTT_mint() {
-  # default pp= replaces stdout with stderr log; can be overriden
-  local __min_t_stderr; __min_t_stderr=$k9s0ke_t3st_tmp_dir/stderr.log
-  local __Tsed=$__real_sed
-  local __Th='__mask_sed; exec 2>"$__min_t_stderr"'
-  for __Tsed in "$__real_sed" "$(! $__sed_has_posix || echo __posix_sed)" "${__MIN_T_SED:-}"; do
-    [ "$__Tsed" ] || continue
-    TTT spec="dash-mint + $__Tsed" pp='cat "$__min_t_stderr"' hook_test_pre='. "$__min_t_dash"; '"$__Th" "$@";
-    [ -z "${BASH_VERSION:-}${ZSH_VERSION:-}" ] ||
-      TTT spec="bash-mint + $__Tsed" pp='cat "$__min_t_stderr"' hook_test_pre='. "$__min_t_bash"; '"$__Th" "$@";
-  done
-  rm -f "$__min_t_stderr"
-}
+# curl -s https://gitlab.com/kstr0k/t3st/-/raw/master/git-t3st-setup | sh
+# prove [-e $shell] [-v]
+## Automatically test several shells:
+# git [-c t3st.prove-shells='...'] t3st-prove [-v]
+# git config t3st.prove-shells 'dash,bash,busybox sh,zsh#,bash --posix,bash44,bash32,zsh --emulate sh,zsh --emulate ksh,mksh,yash'
 
+
+# --- INFRASTRUCTURE
+
+# dynamically change which sed runs
 __real_sed=$( if [ "${POSH_VERSION:-}" ]; then which sed; else command -v sed; fi)
-__sed_has_posix=$( [ "$__real_sed" != sed ] && (sed --posix -e :x </dev/null >/dev/null 2>&1) && echo true || echo false )
+  # avoid infinite recursion with busybox builtin sed
+__sed_has_posix=$( [ "$__real_sed" != sed ] && (sed --posix -e q </dev/null 2>/dev/null) && 
+  echo true || echo false )
+  # mask_sed replaces sed with the current $__Tsed
 if $__sed_has_posix; then
   __posix_sed() { "$__real_sed" --posix "$@"; }
   __mask_sed() { sed() { eval "$__Tsed \$@"; }; }  # avoid nested eval
@@ -30,6 +27,31 @@ else
   __posix_sed() { sed "$@"; }
   __mask_sed() { :; }
 fi
+
+# abbreviations
+TTT()   { k9s0ke_t3st_one "$@"; }
+TTT_e() { k9s0ke_t3st_one errexit=true "$@"; }
+TTTnl=$k9s0ke_t3st_nl
+  # min-template.sh test helper
+TTT_mint() {
+  # default pp= replaces stdout with stderr log; can be overriden
+  local __min_t_stderr; __min_t_stderr=$k9s0ke_t3st_tmp_dir/stderr.log
+  local __Tsed=$__real_sed
+  # repeated code
+  local __Th='__mask_sed; exec 2>"$__min_t_stderr"'
+  local __Tpp='cat "$__min_t_stderr"'
+  # try various sed's
+  for __Tsed in "$__real_sed" "$(! $__sed_has_posix || echo __posix_sed)" "${__MIN_T_SED:-}"; do
+    [ "$__Tsed" ] || continue
+    TTT spec="dash-mint + $__Tsed" pp="$__Tpp" hook_test_pre='. "$__min_t_dash"; '"$__Th" "$@";
+    [ "${BASH_VERSION:-}${ZSH_VERSION:-}" ] || continue
+    TTT spec="bash-mint + $__Tsed" pp="$__Tpp" hook_test_pre='. "$__min_t_bash"; '"$__Th" "$@";
+  done
+  rm -f "$__min_t_stderr"
+}
+
+
+# --- TESTS
 
 k9s0ke_t3st_enter
 
@@ -48,10 +70,5 @@ TTT_mint pp= out="--opt-1-x=ARG$TTTnl--opt2-=ARG" \
   -- eval '__parse_args --opt_1-x=xx --opt2_=y; grep ^--opt-1 "$__min_t_stderr"; grep ^--opt2- "$__min_t_stderr"'
 
 k9s0ke_t3st_leave
-
-# prove [-v] [-e $shell] hello-t3st.t
-# prove [...] [-r] t/
-# git t3st-prove [-...] # if set up
-# git t3st-setup        # update / repair
 
 # vim: set ft=sh:
