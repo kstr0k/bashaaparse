@@ -11,7 +11,7 @@ TTT_mint() {
   # default pp= replaces stdout with stderr log; can be overriden
   local __min_t_stderr; __min_t_stderr=$k9s0ke_t3st_tmp_dir/stderr.log
   local __Tsed=$__real_sed
-  local __Th='! $__sed_has_posix || sed() { "$__Tsed" "$@"; }; exec 2>"$__min_t_stderr"'
+  local __Th='__mask_sed; exec 2>"$__min_t_stderr"'
   while :; do
     TTT spec="dash-mint + $__Tsed" pp='cat "$__min_t_stderr"' hook_test_pre='. "$__min_t_dash"; '"$__Th" "$@";
     [ -z "${BASH_VERSION:-}${ZSH_VERSION:-}" ] ||
@@ -21,19 +21,21 @@ TTT_mint() {
   rm -f "$__min_t_stderr"
 }
 
-__real_sed=$(command -v sed)
+__real_sed=$( if [ "${POSH_VERSION:-}" ]; then which sed; else command -v sed; fi)
 __sed_has_posix=$( [ "$__real_sed" != sed ] && (sed --posix -e :x </dev/null >/dev/null 2>&1) && echo true || echo false )
 if $__sed_has_posix; then
   __posix_sed() { "$__real_sed" --posix "$@"; }
+  __mask_sed() { sed() { "$__Tsed" "$@"; }; }  # avoid nested eval
 else
-  __posix_sed() { command sed "$@"; }
+  __posix_sed() { sed "$@"; }
+  __mask_sed() { :; }
 fi
 
 k9s0ke_t3st_enter
 
 k9s0ke_t3st_mktemp __min_t_dash; export __min_t_dash
 k9s0ke_t3st_mktemp __min_t_bash; export __min_t_bash
-TTT_e nl=false hook_test_pre='! $__sed_has_posix || sed() { __posix_sed "$@"; }; exec >"$__min_t_bash"' spec='# TODO : try to generate bash version' \
+TTT_e nl=false hook_test_pre='__Tsed=__posix_sed; __mask_sed; exec >"$__min_t_bash"' spec='# TODO : try to generate bash version' \
  -- eval '. ../min-template.sh; __parse_args ----gen=bash --src=../min-template.sh'
 TTT_e nl=false hook_test_pre='exec >"$__min_t_dash"' spec='# TODO : try to generate sh version' \
  -- bash -euc '. "$__min_t_bash"; __parse_args ----gen=sh --src=../min-template.sh'
