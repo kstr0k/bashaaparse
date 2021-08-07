@@ -33,10 +33,10 @@ k9s0ke_t3st_enter
 
 k9s0ke_t3st_mktemp __min_t_dash; export __min_t_dash
 k9s0ke_t3st_mktemp __min_t_bash; export __min_t_bash
+TTT_e nl=false hook_test_pre='! $__sed_has_posix || sed() { __posix_sed "$@"; }; exec >"$__min_t_bash"' spec='# TODO : try to generate bash version' \
+ -- eval '. ../min-template.sh; __parse_args ----gen=bash --src=../min-template.sh'
 TTT_e nl=false hook_test_pre='exec >"$__min_t_dash"' spec='# TODO : try to generate sh version' \
- -- bash -uec '. ../min-template.sh; __parse_args ----gen=sh --src=../min-template.sh'
-TTT_e nl=false hook_test_pre='exec >"$__min_t_bash"' spec='# TODO : try to generate bash version' \
- -- bash -uec '. ../min-template.sh; __parse_args ----gen=bash --src=../min-template.sh'
+ -- bash -euc '. "$__min_t_bash"; __parse_args ----gen=sh --src=../min-template.sh'
 
 TTT_mint out="Options:$TTTnl--opt-1-x=ARG${TTTnl}Args: {1 2} {3}" \
   -- __parse_args --opt-1-x=xx '1 2' '3'
