@@ -25,7 +25,7 @@ __real_sed=$( if [ "${POSH_VERSION:-}" ]; then which sed; else command -v sed; f
 __sed_has_posix=$( [ "$__real_sed" != sed ] && (sed --posix -e :x </dev/null >/dev/null 2>&1) && echo true || echo false )
 if $__sed_has_posix; then
   __posix_sed() { "$__real_sed" --posix "$@"; }
-  __mask_sed() { sed() { "$__Tsed" "$@"; }; }  # avoid nested eval
+  __mask_sed() { sed() { eval "$__Tsed \$@"; }; }  # avoid nested eval
 else
   __posix_sed() { sed "$@"; }
   __mask_sed() { :; }
