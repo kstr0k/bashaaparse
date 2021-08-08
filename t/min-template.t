@@ -74,7 +74,9 @@ TTT_e nl=false hook_test_pre='exec >"$__min_t_dash"' spec='# TODO : try to gener
  -- bash -euc '. "$__min_t_bash"; __parse_args ----gen=sh --src=../min-template.sh'
 
 TTT_mint out="Options:$TTTnl--opt-1-x=ARG${TTTnl}Args: {1 2} {3}" \
-  -- __parse_args --opt-1-x=xx '1 2' '3'
+  -- __parse_args --opt-1-x=_O_opt2 '1 2' '3'
+TTT_mint out="Options:$TTTnl--opt-1-x=ARG${TTTnl}Args: {1 2} {3}" spec+=' # TODO : support vars containing "\n_O_"' \
+  -- __parse_args --opt-1-x="$TTTnl"_O_opt2= '1 2' '3'
 TTT_mint pp= out="xy" \
   -- eval '__parse_args --opt-1-x=xx --opt2=y; echo "${_O_opt_1_x%x}$_O_opt2"'
 TTT_mint pp= out="--opt-1-x=ARG$TTTnl--opt2-=ARG" \
