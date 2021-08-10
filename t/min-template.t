@@ -1,6 +1,6 @@
 #!/bin/sh
 set -u
-cd "${0%/*}"/
+cd -- "$(dirname -- "$0")"
 . ./k9s0ke_t3st_lib.sh
 
 ## --- HOWTO / SETUP
@@ -73,8 +73,10 @@ TTT_e nl=false hook_test_pre='__mask_sed "${__gsed_posix:-}"; exec >"$__min_t_ba
 TTT_e nl=false hook_test_pre='exec >"$__min_t_dash"' spec='# TODO : try to generate sh version' \
  -- bash -euc '. "$__min_t_bash"; __parse_args ----gen=sh --src=../min-template.sh'
 
-TTT_mint out="Options:$TTTnl--opt-1-x=ARG${TTTnl}Args: {1 2} {3}" \
-  -- __parse_args --opt-1-x=_O_opt2 '1 2' '3'
+TTT_mint out="Options:$TTTnl--opt-1-x=ARG${TTTnl}Args: {1 2} { 3 }" \
+  -- __parse_args --opt-1-x='_O_opt2 X' '1 2' ' 3 '
+TTT_mint out="Options:$TTTnl--opt-1-x[=' x $TTTnl y z ']" pp= \
+  -- __parse_args --opt-1-x=" x $TTTnl y z " '-?'
 TTT_mint out="Options:$TTTnl--opt-1-x=ARG${TTTnl}Args: {1 2} {3}" spec+=' # TODO : support vars containing "\n_O_"' \
   -- __parse_args --opt-1-x="$TTTnl"_O_opt2= '1 2' '3'
 TTT_mint pp= out="xy" \
