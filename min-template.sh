@@ -5,10 +5,9 @@
 #shellcheck disable=SC3028,SC3043
 
 __usage() {  # args: header footer
-  local flags; flags=$(
-    #{ [ -z "${BASH_VERSION:-}" ] || compgen -v; [ -z "${ZSH_VERSION:-}" ] || emulate zsh -c 'zmodload zsh/parameter; print -rl -- ${(k)parameters}'; } |  ##bash:
-    #sed -n -e 's/_/-/g;s/^-O-\(.*\)/--\1=ARG/p')  ##bash:
-    set | sed -n -e '/^_O_/!d;s/_/-/g;s/^-O-\([[:alnum:]-]*\)=.*/--\1=ARG/p')  ##sh:
+  local flags p='/^_O_/!d;/[^[:alnum:]_]/d;s/$/=ARG/;s/_/-/g;s/^-O-/--/p'; flags=$(
+    #{ [ -z "${BASH_VERSION:-}" ] || compgen -v; [ -z "${ZSH_VERSION:-}" ] || emulate zsh -c 'zmodload zsh/parameter; print -rl -- ${(k)parameters}'; } | sed -n -e "$p")  ##bash:
+    set | sed -n -e '/=/!d;s/=.*//' -e "$p")  ##sh:
   printf '%s'${1:+'\n'}  "${1:-}"  # add \n only if missing
   test -z "$flags" || printf '%s\n' "$flags"
   printf '%s'${2:+'\n'}  "${2:-}"
