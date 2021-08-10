@@ -7,7 +7,7 @@
 __usage() {  # args: <help-option> header footer
   local vs=false; [ "$1" != '-?' ] || vs=true; shift
   local flags p='/^_O_/!d;/[^[:alnum:]_]/d;h;s/_/-/g;s/^-O-/--/;s/$/=ARG/p'
-  ! "$vs" || p=${p%';s'*}';G;s/\n/[=$/;s/$/]/p'
+  ! "$vs" || p=${p%';s'*}';G;s/\n/[='\''$/;s/$/'\'']/p'
   #flags=$({ [ -z "${BASH_VERSION:-}" ] || compgen -v; [ -z "${ZSH_VERSION:-}" ] || emulate zsh -c 'zmodload zsh/parameter; print -rl -- ${(k)parameters}'; } | sed -n -e "$p")  ##bash:
   flags=$(set | sed -n -e '/=/!d;s/=.*//' -e "$p")  # posh fails: no =.*  ##sh:
   printf '%s'${1:+'\n'}  "${1:-}"
@@ -20,6 +20,7 @@ __parse_args() {
       -v) set -x ;;
       -h|--help|--usage|-'?') __usage "$1" 'Options:'; exit 0 ;;
       --*=*) k=${1%%=*}; k=_O_${k#--}
+        case "$k" in *[![:alnum:]_-]*) unset Bad; : "${Bad?arg "$k"}";; esac
         #printf -v "${k//-/_}" '%s'  "${1#--*=}" ;;  ##bash:
         k=$k-; while :; do case "$k" in  ##sh:
           *-) k=${k%%-*}_${k#*-} ;;  ##sh:
