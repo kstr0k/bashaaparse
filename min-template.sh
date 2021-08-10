@@ -1,7 +1,7 @@
 #!/bin/sh
-### vim bash -> sh: g/##bash:$/d | %s/^\(\s\+\)##\(.\{-}\)\s\+##sh:$/\1\2/
+### vim bash -> sh: g/##bash:$/d | %s/^\(\s\+\)##\(.\{-}\)\s\+##sh:$/\1\2/  ##strip1:
 ### (. ~/src/bashaaparse/min-template.sh; __parse_args -v --test-opt=x 1 2)  # test
-### bash -uec '. ./min-template.sh; __parse_args ----gen=sh-strip >mt.sh'  # generate sh version
+### bash -uec '. ./min-template.sh; __parse_args ----gen=sh-strip >mt.sh'  # generate sh version  ##stripn:
 #shellcheck disable=SC3028,SC3043
 
 __usage() {  # args: <help-option> header footer
@@ -36,20 +36,33 @@ __parse_args() {
 }
 
 ### override / remove these as desired
-__parse_args_debug_main() {
-  if [ "${_O___gen:-}" ]; then
-      local sh osh src strip; strip=false; src=${_O_src:-}
-      : "${src:=${BASH_VERSION+${BASH_SOURCE:-}}}"  # could be bash only; keep it in sh, in case sourced from bash
-      [ -z "${ZSH_VERSION:-}" ] || eval ': "${src:=${(%):-%x}}"'  # ditto; yash breaks without eval even with unexec'ed subshell
-      case "${src##*/}" in bash|zsh|sh) unset Bad && : "${Bad?source "$src" (use --src=)}" ;; esac
-      sh=${_O___gen#----gen=}; [ "${sh%%*-strip}" ] || { sh=${sh%-strip}; strip=true; }
-      osh=ba$sh; osh=${osh#baba}
-      local s1="/##$osh:"'$/{s/\(^[[:space:]]*\)/\1#/p;d;}' s2='\1'
-      if $strip; then s1="/##$osh:"'$/d'; s2=''; fi
-      (set -x; sed <"$src" -n -e '1{s@^\(#!\).*'"@\1/bin/$sh@p;d;}" -e "$s1" -e 's/\([[:space:]]*##'"$sh"':\)$/'"$s2"'/' -e ts -e 'p;d' -e :s -e 's/^\([[:space:]]*\)#*/\1/;p')
-  fi
-  __usage '' 'Options:' "Args:$(test $# -eq 0 || printf ' {%s}' "$@")" 1>&2
-}
 __process_arg() { return 1; }  # if $1 handled, return 0; exit to stop processing
 __main() { __parse_args_debug_main "$@"; }
+__parse_args_debug_main() {
+  if [ "${_O___gen:-}" ]; then  ##strip1:
+      local sh osh src strip; strip=false; src=${_O_src:-}
+      sh=${_O___gen#----gen=};
+      case "$sh" in *-strip) sh=${sh%-strip}; strip=true ;; esac
+      [ -r "${BASH_SOURCE:-}" ] && exec <"$BASH_SOURCE" ||
+        :  # zsh ${(%):%x}; sh: impossible
+      osh=ba$sh; osh=${osh#baba}
+      local s1="/##$osh:"'$/{s/\(^[[:space:]]*\)/\1#/p;d;}' s2='\1'
+      set -- -n; if "$strip"; then
+        s1="/##$osh:"'$/d'; s2=''; set -- "$@" -e '/##strip1:$/,/##stripn:$/d'
+      fi
+      local from='#'; ! "$strip" || from=$from' stripped'
+      from="$from $sh"' min-template.sh (https://gitlab.com/kstr0k/bashaaparse)'
+      set -- "$@" -e '1{s@^\(#!\).*'"@\1/bin/$sh@p;s@.*@$from@p;d;}" \
+        -e "$s1" -e 's/\([[:space:]]*##'"$sh"':\)$/'"$s2"'/' -e ts -e 'p;d' \
+        -e :s -e 's/^\([[:space:]]*\)#*/\1/;p'
+      (set -x; sed "$@"); exit 0
+  fi  ##stripn:
+  __usage '' 'Options:' "Args:$(test $# -eq 0 || printf ' {%s}' "$@")" 1>&2
+}
+__abspath_arg0() {  # args: outvar [relpath]
+  [ "$1" = d ] || local d; d=${ZSH_ARGZERO:-$0}
+  case "$d" in /*) ;; *) d=$PWD/$d ;; esac
+  if [ $# -ge 2 ]; then d=${d%/*}; d=${d:-/}${1#*=}; fi
+  [ "$1" = d ] || eval "$1=\$d"
+}
 ### end override
