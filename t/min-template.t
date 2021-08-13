@@ -34,8 +34,8 @@ __find_seds() {
       *) __MIN_T_SEDS="$__MIN_T_SEDS,$__Tsed" ;;
       '') continue ;;
     esac
-    __MIN_T_SEDS="$__MIN_T_SEDS,$__busybox_sed,$__gsed,$__gsed_posix"
   done
+  __MIN_T_SEDS="$__MIN_T_SEDS,$__busybox_sed,$__gsed,$__gsed_posix"
 }
 if [ -z "${__MIN_T_SEDS:-}" ]; then __find_seds; fi
 
@@ -50,13 +50,14 @@ TTT_mint() {
   # repeated code
   local __Th='__mask_sed "$__Tsed"; exec 2>"$__min_t_stderr"'
   local __Tpp='cat "$__min_t_stderr"'
+  local __Tcnt0=$k9s0ke_t3st_cnt
 
   local __Tseds __Tsed; __Tseds=$__MIN_T_SEDS',';  # try various sed's
   while [ "$__Tseds" ] ; do
     __Tsed=${__Tseds%%,*}; __Tseds=${__Tseds#*,}; [ "$__Tsed" ] || continue
-    TTT spec="dash-mint + '$__Tsed'" pp="$__Tpp" hook_test_pre='. "$__min_t_dash"; '"$__Th" "$@";
+    TTT spec="dash-mint + '$__Tsed' @$__Tcnt0" pp="$__Tpp" hook_test_pre='. "$__min_t_dash"; '"$__Th" "$@";
     [ "${BASH_VERSION:-}${ZSH_VERSION:-}" ] || continue
-    TTT spec="bash-mint + $__Tsed" pp="$__Tpp" hook_test_pre='. "$__min_t_bash"; '"$__Th" "$@";
+    TTT spec="bash-mint + '$__Tsed' @$__Tcnt0" pp="$__Tpp" hook_test_pre='. "$__min_t_bash"; '"$__Th" "$@";
   done
   rm -f "$__min_t_stderr"
 }
