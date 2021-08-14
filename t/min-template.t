@@ -1,7 +1,7 @@
 #!/bin/sh
 set -u
 cd -- "$(dirname -- "$0")"
-. ./k9s0ke_t3st_lib.sh
+. ./t3st-lib/k9s0ke_t3st_lib.sh
 
 ## --- HOWTO / SETUP
 
@@ -41,7 +41,7 @@ if [ -z "${__MIN_T_SEDS:-}" ]; then __find_seds; fi
 
 # abbreviations
 TTT()   { k9s0ke_t3st_one "$@"; }
-TTT_e() { k9s0ke_t3st_one errexit=true "$@"; }
+TTT_ee() { k9s0ke_t3st_one errexit=true "$@"; }
 TTTnl=$k9s0ke_t3st_nl
   # min-template.sh test helper
 TTT_mint() {
@@ -69,9 +69,9 @@ k9s0ke_t3st_enter
 
 k9s0ke_t3st_mktemp __min_t_dash; export __min_t_dash
 k9s0ke_t3st_mktemp __min_t_bash; export __min_t_bash
-TTT_e nl=false hook_test_pre='__mask_sed "${__gsed_posix:-}"; exec >"$__min_t_bash"' spec='# TODO : try to generate bash version' \
+TTT_ee nl=false hook_test_pre='__mask_sed "${__gsed_posix:-}"; exec >"$__min_t_bash"' spec='# TODO : try to generate bash version' \
  -- eval '. ../min-template.sh; __parse_args ----gen=bash --src=../min-template.sh'
-TTT_e nl=false hook_test_pre='exec >"$__min_t_dash"' spec='# TODO : try to generate sh version' \
+TTT_ee nl=false hook_test_pre='exec >"$__min_t_dash"' spec='# TODO : try to generate sh version' \
  -- bash -euc '. "$__min_t_bash"; __parse_args ----gen=sh --src=../min-template.sh'
 
 TTT_mint out="Options:$TTTnl--opt-1-x=ARG${TTTnl}Args: {1 2} { 3 }" \
