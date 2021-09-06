@@ -64,31 +64,31 @@ EOGET
         _O_src=- ;;
     esac
     [ -z "${_O_src:-}" ] || [ "${_O_src:-}" = - ] || exec <"$_O_src"
-    osh=ba$sh; osh=${osh#baba}
+    osh=ba$sh; osh=${osh#baba}  # toggle un-/commented state:
     local s1="/##$osh:"'$/{s/\(^[[:space:]]*\)/\1#/p;d;}' s2='\1'
     set -- -n; if "$strip"; then
       s1="/##$osh:"'$/d'; s2=''; set -- "$@" -e '/##strip1:$/,/##stripn:$/d'
-    fi
+    fi  # ^ delete $osh; strip markers & extra code
     local from='#'; ! "$strip" || from=$from' stripped'
     from="$from $sh min-template.sh ($url)"
     set -- "$@" -e '1{s@^\(#!\).*'"@\1/bin/$sh@p;s@.*@$from@p;d;}" \
       -e "$s1" -e 's/\([[:space:]]*##'"$sh"':\)$/'"$s2"'/' -e ts -e 'p;d' \
       -e :s -e 's/^\([[:space:]]*\)#*/\1/;p'
-    (set -x; sed "$@"); exit 0
+    (set -x; exec sed "$@"); exit 0
   fi  ##stripn:
   __usage '' 'Options:' "Args:$(test $# -eq 0 || printf ' {%s}' "$@")" 1>&2
 }
-# busybox-like muxer; minimizes fork/exec cost (subshells, $(), external cmds)
+# busybox-like muxer; minimize fork/execs (subshells, $(), external cmds)
 __min_template_util() {
 case "$1" in
-  # like outvar=$(realpath "$(dirname "$path")")/relpath, but no fork/exec cost
-  (abspath_resolve_ref) shift  # args: outvar path [relpath]
+  # ~ outv=$(realpath "$(dirname "$path")")/relp without fork/exec
+  (abspath_resolve_ref) shift  # args: outv path [relp] # no relp: just realpath
     [ "$1" = f ] || local f; f=$2
     case "$f" in /*) ;; *) f=$PWD/$f ;; esac
     if [ $# -ge 2 ]; then f=${f%/*}; f=${f%/}/$3; fi
     [ "$1" = f ] || eval "$1=\$f"
     ;;
-  # like cmd=$(which try1 || which try 2 ...)
+  # ~ cmd=$(which try1 || which try 2 ...)
   (which1) shift  # args: WHICH_CMD TRY..; echoes path; $_R4_which1 = ok-TRY
     local which="${1:-command -v}"; shift  # $1='...>/dev/null' to use only _R4_
     while [ $# -gt 0 ]; do
